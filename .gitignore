@@ -1,5 +1,5 @@
 # built application files
-*.ap_
+!*.ap_
 
 # files for the dex VM
 *.dex
@@ -18,6 +18,11 @@ local.properties
 # Eclipse project files
 .classpath
 .project
+build.xml
+ant.properties
+proguard-project.txt
+project.properties
+out/
 
 # IDEA project files
 .idea/

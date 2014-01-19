@@ -105,7 +105,7 @@ public class ImageAdapter extends BaseAdapter {
             }
 
 
-            imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            imageView.setScaleType(ImageView.ScaleType.FIT_XY);
 
 
       //  } else {

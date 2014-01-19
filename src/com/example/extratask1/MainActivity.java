@@ -2,6 +2,7 @@ package com.example.extratask1;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -35,6 +36,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 
+
 public class MainActivity extends Activity {
     /**
      * Called when the activity is first created.
@@ -43,6 +45,7 @@ public class MainActivity extends Activity {
     public static final String flickr_url = "http://www.flickr.com/services/api/";
     private GridView gridview;
     private final Context m_context= this;
+    public static Context put_context;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,7 +63,11 @@ public class MainActivity extends Activity {
 
         gridview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-                Toast.makeText(MainActivity.this, "" + position, Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(m_context, FullImageActivity.class);
+                intent.putExtra("position", position);
+                put_context = m_context;
+                startActivity(intent);
+                //Toast.makeText(MainActivity.this, "" + position, Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -102,7 +109,7 @@ public class MainActivity extends Activity {
     }
 
     private void downloadImages() {
-        new DownloadImages().execute(URLEncoder.encode(ya_url));
+        new DownloadImages().execute(ya_url);
     }
 
     private class DownloadImages extends AsyncTask<String, Void, String> {
@@ -110,11 +117,13 @@ public class MainActivity extends Activity {
         private String xmlError;
         private String status;
 
+
         @Override
         protected String doInBackground(String... params) {
 
             String url = params[0];
             final ArrayList<String> img_refs = new ArrayList<>();
+            final ArrayList<String> orig_img_refs = new ArrayList<>();
 //            index = 0;
             try {
                 SAXParserFactory factory = SAXParserFactory.newInstance();
@@ -139,11 +148,16 @@ public class MainActivity extends Activity {
 
                         if (qName.equals("f:img")) {
                             img = true;
-                            if (attributes.getValue("size").equals("orig")) {
+                            if (attributes.getValue("size").equals("M")) {
                                 img_refs.add(attributes.getValue("href"));
                             };
-
+                            if (attributes.getValue("size").equals("XL")) {
+                                orig_img_refs.add(attributes.getValue("href"));
+                            }
                         }
+                        //if (qName.equals("content")) {
+//                            orig_img_refs.add(attributes.getValue("src"));
+//                        }
 
                         if (qName.equals("description")) {
                             description = true;
@@ -231,14 +245,44 @@ public class MainActivity extends Activity {
                     HttpEntity httpEntity = httpResponse.getEntity();
                     InputStream is = httpEntity.getContent();
                     String filePath = "mini_" + index;
-                    File file = new File(getFilesDir(), filePath);
-                    FileOutputStream outStream = new FileOutputStream(filePath);
-                    Bitmap my_bmp = BitmapFactory.decodeStream(is);
-                    my_bmp.compress(Bitmap.CompressFormat.PNG, 100, outStream);
+                    File file = new File(m_context.getFilesDir(), filePath);
+                    FileOutputStream outStream = new FileOutputStream(file);
+                    //Bitmap my_bmp = BitmapFactory.decodeStream(is);
+                    //my_bmp.compress(Bitmap.CompressFormat.PNG, 100, outStream);
+                    byte[] buffer = new byte[1024];
+                    int len;
+                    while ((len = is.read(buffer)) != -1) {
+                        outStream.write(buffer, 0, len);
+
+                    }
                     index++;
                     is.close();
+                    outStream.close();
 
                 }
+                index = 0;
+                for (String ref : orig_img_refs) {
+                    HttpClient httpClient = new DefaultHttpClient();
+                    HttpGet httpGet = new HttpGet(ref);
+                    HttpResponse httpResponse = httpClient.execute(httpGet);
+                    HttpEntity httpEntity = httpResponse.getEntity();
+                    InputStream is = httpEntity.getContent();
+                    String filePath = "orig_" + index;
+                    File file = new File(m_context.getFilesDir(), filePath);
+                    FileOutputStream outStream = new FileOutputStream(file);
+               //     Bitmap my_bmp = BitmapFactory.decodeStream(is);
+                 //   my_bmp.compress(Bitmap.CompressFormat.PNG, 100, outStream);
+                    byte[] buffer = new byte[1024 * 128];
+                    int len;
+                    while ((len = is.read(buffer)) != -1) {
+                        outStream.write(buffer, 0, len);
+                    }
+                    index++;
+                    is.close();
+                    outStream.close();
+
+                }
+
             } catch( Exception e) {
                     e.printStackTrace();
             }
@@ -253,6 +297,7 @@ public class MainActivity extends Activity {
             // into onPostExecute() but that is upto you
             if ("OK".equals(result)) {
                 gridview.setAdapter(new ImageAdapter(m_context));
+                Toast.makeText(m_context, "Finished Loading", 200).show();
             }
         }
         @Override

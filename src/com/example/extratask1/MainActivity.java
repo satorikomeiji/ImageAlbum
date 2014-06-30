@@ -41,14 +41,28 @@ public class MainActivity extends Activity {
     /**
      * Called when the activity is first created.
      */
+    public static final String WOE_ID = "753692";
+    public static final String searched_text = "Antoni Gaudí";
+    public static final String API_KEY =  "f15410a19ee77eae8a6dff213318cb98";
+    public static final String SECRET = "e667170799eccdea";
     public static final String ya_url = "http://api-fotki.yandex.ru/api/top/?limit=20";
-    public static final String flickr_url = "http://www.flickr.com/services/api/";
+    public static String flickr_url;
     private GridView gridview;
     private final Context m_context= this;
     public static Context put_context;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        try {
+            flickr_url =  "https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key="
+                + API_KEY + "&text="
+                + URLEncoder.encode(searched_text, "UTF-8") + "&woe_id="
+                + WOE_ID + "&per_page="
+                    + ImageAdapter.IMAGE_COUNT + "&sort=relevance";
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Unsupported encoding",e);
+        }
+
         setContentView(R.layout.main);
         try {
             createResourceFiles();
@@ -109,7 +123,10 @@ public class MainActivity extends Activity {
     }
 
     private void downloadImages() {
-        new DownloadImages().execute(ya_url);
+        new DownloadImages().execute(flickr_url);
+    }
+    private static String construct_ref(String photo_id, String photo_secret, String photo_server, String photo_farm, String option) {
+        return "https://farm" + photo_farm + ".staticflickr.com/" + photo_server+ "/" + photo_id + "_" + photo_secret + "_" + option + ".jpg";
     }
 
     private class DownloadImages extends AsyncTask<String, Void, String> {
@@ -142,18 +159,26 @@ public class MainActivity extends Activity {
                         buffer = new StringBuffer();
                         //System.out.println("Start Element :" + qName);
                         System.out.println("StartTag: " + qName);
-                        if (qName.equals("entry")) {
+                        if (qName.equals("photos")) {
                             item = true;
                         }
 
-                        if (qName.equals("f:img")) {
+                        if (qName.equals("photo")) {
                             img = true;
-                            if (attributes.getValue("size").equals("M")) {
-                                img_refs.add(attributes.getValue("href"));
+                            if (attributes.getValue("ispublic").equals("1")) {
+                                String photo_id = attributes.getValue("id");
+                                String photo_secret = attributes.getValue("secret");
+                                String photo_server = attributes.getValue("server");
+                                String photo_farm = attributes.getValue("farm");
+
+                                //img_refs.add(attributes.getValue("href"));
+                                //orig_img_refs.add(construct_ref(photo_id,photo_secret, photo_server, photo_farm, "b"));
+                                img_refs.add(construct_ref(photo_id,photo_secret, photo_server, photo_farm, "q"));
+
                             };
-                            if (attributes.getValue("size").equals("XL")) {
-                                orig_img_refs.add(attributes.getValue("href"));
-                            }
+                            //if (attributes.getValue("size").equals("XL")) {
+//                                orig_img_refs.add(attributes.getValue("href"));
+//                            }
                         }
                         //if (qName.equals("content")) {
 //                            orig_img_refs.add(attributes.getValue("src"));
@@ -177,11 +202,11 @@ public class MainActivity extends Activity {
 //                        }
                         System.out.println("EndTag: " + qName);
                         //System.out.println("End Element :" + qName);
-                        if (qName.equals("entry")) {
+                        if (qName.equals("photos")) {
                             item = false;
                         }
 
-                        if (qName.equals("f:img")) {
+                        if (qName.equals("photo")) {
                             img = false;
                         }
 

@@ -17,7 +17,7 @@ import android.widget.ImageView;
  * Created by satori on 1/18/14.
  */
 public class ImageAdapter extends BaseAdapter {
-    public static final int IMAGE_COUNT = 20;
+    public static final int IMAGE_COUNT = 64;
     private Context mContext;
     private Bitmap[] bitmaps;
 
